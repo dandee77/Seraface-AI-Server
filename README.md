@@ -1,12 +1,96 @@
-# React + Vite
+# Seraface - AI Skincare App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Seraface** is an elegant, AI-powered mobile application that analyzes facial skin, identifies conditions, and recommends personalized skincare routines and products — all tailored to the user's needs and budget.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📸 **Facial Skin Scan** using AI and computer vision
+- 🧠 **Smart Analysis** of skin type, concerns, and conditions
+- 🧴 **Personalized Skincare Routines** powered by AI
+- 🛒 **Product Recommendations** based on ingredients, past usage, and budget
+- 📊 **Progress Tracking** to monitor skin improvements over time
+- 💡 **User-Centered Design** with a clean, modern mobile interface
 
-## Expanding the ESLint configuration
+## ⚙️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Frontend**: ReactJS (Vite) + Tailwind CSS
+- **Mobile**: CapacitorJS
+- **Backend**: FastAPI (planned)
+- **AI & CV**: Python-based models (planned for skin analysis)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js v18+
+- Capacitor CLI
+
+### Install and Run
+
+```bash
+# Clone the repo
+https://github.com/dandee77/Seraface-AI.git
+
+cd Seraface-AI
+
+# Install dependencies
+npm install
+
+# Run the app in development
+npm run dev
+```
+
+### Build and Deploy to Mobile
+
+```bash
+# Build for production
+npm run build
+
+# Copy build to Capacitor
+npx cap copy
+
+# Open in Android Studio or Xcode
+npx cap open android
+# or
+npx cap open ios
+```
+
+## 📁 Project Structure
+
+```
+seraface-ai-skincare/
+├── api/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── pages/
+│   ├── services/
+│   └── App.jsx
+├── capacitor.config.ts
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+## 📌 Roadmap
+
+- [x] Set up React + Vite + Capacitor
+- [ ] Integrate face scanning with AI skin detection
+- [ ] Build budget-based recommendation engine
+- [ ] Connect to backend (FastAPI)
+- [ ] Add user account system
+- [ ] Polish UI/UX and animations
+
+## 🧑‍💻 Authors
+
+**Dandee Galang** – [@dandee77](https://github.com/dandee77) <br/>
+**Aaron Ersando** - [@aaronersando](https://github.com/aaronersando)
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+> "Let your skin glow with insight." – _Seraface_
