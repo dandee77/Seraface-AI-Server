@@ -85,7 +85,7 @@ seraface-ai-skincare/
 ## 🧑‍💻 Authors
 
 **Dandee Galang** – [@dandee77](https://github.com/dandee77) <br/>
-**Aaron Ersando** - [@aaronersando](https://github.com/aaronersando)
+**Aaron Ersando** – [@aaronersando](https://github.com/aaronersando)
 
 ## 📄 License
 
