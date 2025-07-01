@@ -24,10 +24,14 @@ class FormData(BaseModel):
 submitted_forms = []
 
 # ------- Route -------- #
-
+"""
+This endpoint allows users to submit their skincare form data.
+It accepts various skin-related information and stores it in memory.
+This is a mock implementation for Phase 1, which will later be sent to Phase 3.
+"""
 @router.post("/submitform")
 def submit_form(data: FormData):
-    # Simulate saving to memory (will later send this later to Phase 2)
+    # Simulate saving to memory (will later send this later to Phase 3
     submitted_forms.append(data)
 
     return {
