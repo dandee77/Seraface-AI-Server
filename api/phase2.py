@@ -89,6 +89,12 @@ Only respond with the valid JSON object.
 # === API Endpoint ===
 @router.post("/analyze-face")
 async def analyze_face(file: UploadFile = File(...)):
+    """
+    Endpoint to analyze a face image using Gemini 1.5 Flash.
+    Accepts an image file and returns structured analysis data.
+    - file: The image file to analyze.
+    - Returns a JSON response with the analysis results.
+    """
     try:
 
         image_bytes = await file.read()
