@@ -1,94 +1,106 @@
-# phase2.py
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
-from typing import Dict
-import uuid
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
+from PIL import Image
+import io
+import google.generativeai as genai
+from dotenv import load_dotenv
 import os
+import re
+import json
 
 router = APIRouter()
 
-# ------- Directory Setup -------- #
-UPLOAD_FOLDER = "uploaded_faces"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY not found in environment variables")
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+# === Clean Gemini Response Text ===
+def clean_response(text: str) -> str:
+    text = text.replace("`", "").replace("“", '"').replace("”", '"').replace("’", "'").strip()
+    text = re.sub(r'^\s*```[a-zA-Z]*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+    return text
 
 
-# ------- Route for Face Analysis -------- #
+def analyze_face_image(image: Image.Image):
+    model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+
+    prompt = """
+You are a skincare AI.
+
+Analyze the face image and return the following structured data in JSON format:
+
+{
+  "redness_irritation": "none | mild | moderate | severe",
+  "acne_breakouts": {
+    "severity": "none | mild | moderate | severe",
+    "count_estimate": number,
+    "location": ["forehead", "cheeks", "chin", etc.]
+  },
+  "blackheads_whiteheads": {
+    "presence": true | false,
+    "location": [areas]
+  },
+  "oiliness_shine": {
+    "level": "low | medium | high",
+    "location": [areas]
+  },
+  "dryness_flaking": {
+    "presence": true | false,
+    "location": [areas]
+  },
+  "uneven_skin_tone": "none | mild | moderate | severe",
+  "dark_spots_scars": {
+    "presence": true | false,
+    "description": "short summary"
+  },
+  "pores_size": {
+    "level": "small | medium | large",
+    "location": [areas]
+  },
+  "hormonal_acne_signs": "yes | no | uncertain",
+  "stress_related_flareups": "yes | no",
+  "dehydrated_skin_signs": "yes | no",
+  "fine_lines_wrinkles": {
+    "presence": true | false,
+    "areas": [areas]
+  },
+  "skin_elasticity": "low | average | high"
+}
+
+Only respond with the valid JSON object.
 """
-Analyze a user's facial image to provide skincare insights.
-This endpoint accepts an image file, saves it, and simulates an AI analysis
-to return skincare-related data.
-"""
+
+    try:
+        response = model.generate_content([prompt, image])
+        cleaned = clean_response(response.text)
+
+        result = json.loads(re.search(r"\{.*\}", cleaned, re.DOTALL).group())
+
+        return result
+
+    except Exception as e:
+        print(f"[Gemini Error] {e}")
+        raise HTTPException(status_code=500, detail=f"Gemini parsing error: {e}")
+
+# === API Endpoint ===
 @router.post("/analyze-face")
-async def analyze_face(image: UploadFile = File(...)) -> Dict:
-   
-    ext = image.filename.split(".")[-1]
-    image_filename = f"{uuid.uuid4()}.{ext}"
-    image_path = os.path.join(UPLOAD_FOLDER, image_filename)
+async def analyze_face(file: UploadFile = File(...)):
+    try:
 
-    with open(image_path, "wb") as f:
-        f.write(await image.read())
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-    prompt = f"""
-You are a skincare AI. Analyze the user's facial image located at: {image_path}
+    
+        ai_result = analyze_face_image(image)
 
-Return the following data in JSON format:
-- redness_irritation
-- acne_breakouts (severity, count, location)
-- blackheads_whiteheads (presence, location)
-- oiliness_shine (level, location)
-- dryness_flaking (presence, location)
-- uneven_skin_tone
-- dark_spots_scars (presence, description)
-- pores_size (level, location)
-- hormonal_acne_signs
-- stress_related_flareups
-- dehydrated_skin_signs
-- fine_lines_wrinkles (presence, areas)
-- skin_elasticity
-"""
+        return JSONResponse(content={
+            "message": "Face analyzed using Gemini 1.5 Flash",
+            "ai_output": ai_result
+        })
 
-    mock_ai_output = {
-        "redness_irritation": "moderate",
-        "acne_breakouts": {
-            "severity": "mild",
-            "count_estimate": 5,
-            "location": ["cheeks", "chin"]
-        },
-        "blackheads_whiteheads": {
-            "presence": True,
-            "location": ["nose", "chin"]
-        },
-        "oiliness_shine": {
-            "level": "medium",
-            "location": ["T-zone"]
-        },
-        "dryness_flaking": {
-            "presence": True,
-            "location": ["cheeks"]
-        },
-        "uneven_skin_tone": "moderate",
-        "dark_spots_scars": {
-            "presence": True,
-            "description": "Post-acne marks visible on cheeks"
-        },
-        "pores_size": {
-            "level": "large",
-            "location": ["nose", "cheeks"]
-        },
-        "hormonal_acne_signs": "uncertain",
-        "stress_related_flareups": "yes",
-        "dehydrated_skin_signs": "yes",
-        "fine_lines_wrinkles": {
-            "presence": False,
-            "areas": []
-        },
-        "skin_elasticity": "average"
-    }
-
-    print("=== AI Prompt Sent ===")
-    print(prompt)
-
-    return {
-        "message": "Face scanned successfully",
-        "image_path": image_path,
-        "ai_output": mock_ai_output
-    }
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
