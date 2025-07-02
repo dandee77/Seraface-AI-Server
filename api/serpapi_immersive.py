@@ -8,8 +8,30 @@ from urllib.parse import urlparse, parse_qs
 load_dotenv()
 
 API_KEY = os.getenv("SERPAPI_KEY") or "YOUR_SERPAPI_KEY"
+CACHE_FILE = "products_cache.json"
+
+def load_cache():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_cache(cache_data):
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(cache_data, f, indent=2)
 
 def fetch_product_data(query):
+    # Check cache first
+    cache = load_cache()
+    query_key = query.lower().strip()
+
+    if query_key in cache:
+        print("✅ Found in cache.")
+        return cache[query_key]
+
+    print("🔍 Not found in cache. Fetching from SerpAPI...")
+
+    # Step 1: Basic search
     search_params = {
         "engine": "google",
         "q": query,
@@ -33,24 +55,23 @@ def fetch_product_data(query):
         print("❌ No product API URL found.")
         return None
 
-
     parsed_url = urlparse(product_api_url)
     product_params = parse_qs(parsed_url.query)
     product_params = {k: v[0] for k, v in product_params.items()}
-    product_params["api_key"] = API_KEY  
+    product_params["api_key"] = API_KEY
 
     product_res = requests.get("https://serpapi.com/search.json", params=product_params)
     product_data = product_res.json()
-
 
     extracted = {
         "query": query,
         "fetched_at": product_data.get("search_metadata", {}).get("created_at"),
         "google_product_url": product_data.get("search_metadata", {}).get("google_product_url"),
+        "pruduct_api_url": product_api_url
     }
 
     product = product_data.get("product_results", {})
-    extracted["pruduct_api_url"] = product_api_url
+    extracted["product_api_url"] = product_api_url
     extracted["title"] = product.get("title")
     extracted["description"] = product.get("description")
     extracted["rating"] = product.get("rating")
@@ -74,6 +95,10 @@ def fetch_product_data(query):
         for r in related
     ]
 
+    cache[query_key] = extracted
+    save_cache(cache)
+
+    print("✅ Fetched and cached.")
     return extracted
 
 if __name__ == "__main__":
@@ -82,8 +107,3 @@ if __name__ == "__main__":
 
     if result:
         print(json.dumps(result, indent=2))
-
-        fname = f"cache_{query.lower().replace(' ', '_')}.json"
-        with open(fname, "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2)
-            print(f"\n✅ Saved to {fname}")
