@@ -1,124 +1,89 @@
+import requests
 import json
 import os
 from datetime import datetime
-from serpapi import GoogleSearch # shit aint working without the pip `install google-search-results`
-# import serpapi # alternative to GoogleSearch
 from dotenv import load_dotenv
+from urllib.parse import urlparse, parse_qs
 
 load_dotenv()
 
-CACHE_FILE = "immersive_product_cache.json"
-api_key = os.getenv("SERPAPI_KEY")
+API_KEY = os.getenv("SERPAPI_KEY") or "YOUR_SERPAPI_KEY"
 
-if not api_key:
-    raise RuntimeError("SERPAPI_KEY not found in environment variables")
-
-def load_cache():
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-
-def save_cache(cache):
-    with open(CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(cache, f, indent=2)
-
-
-def fetch_immersive_products(query):
-    cache = load_cache()
-    query_key = query.lower().strip()
-
-    if query_key in cache:
-        return cache[query_key]
-
-    params = {
+def fetch_product_data(query):
+    search_params = {
+        "engine": "google",
         "q": query,
+        "api_key": API_KEY,
         "hl": "en",
-        "gl": "us",
-        "google_domain": "google.com",
-        "api_key": api_key
+        "gl": "us"
     }
 
-    search = GoogleSearch(params)
-    # search = serpapi.search(params) # alternative to GoogleSearch
-    results = search.get_dict() 
+    search_res = requests.get("https://serpapi.com/search.json", params=search_params)
+    data = search_res.json()
 
-    immersive_products = results.get("immersive_products", [])
-    inline_videos = results.get("inline_videos", [])
-    perspectives = results.get("perspectives", [])
+    immersive_products = data.get("immersive_products", [])
+    if not immersive_products:
+        print("❌ No immersive products found.")
+        return None
 
-    simplified_products = []
-    for item in immersive_products:
-        simplified_products.append({
-            "title": item.get("title"),
-            "price": item.get("price"),
-            "image": item.get("thumbnail"),
-            "source": item.get("source"),
-            "rating": item.get("rating"),
-            "reviews": item.get("reviews"),
-            "product_id": item.get("product_id"),
-            "serpapi_product_api": item.get("serpapi_product_api"),
-            "serpapi_link": item.get("serpapi_link"),
-            "fetched_at": datetime.utcnow().isoformat()
-        })
+    first_product = immersive_products[0]
+    product_api_url = first_product.get("serpapi_product_api")
 
-    simplified_videos = []
-    for video in inline_videos:
-        simplified_videos.append({
-            "title": video.get("title"),
-            "link": video.get("link"),
-            "thumbnail": video.get("thumbnail"),
-            "channel": video.get("channel"),
-            "duration": video.get("duration"),
-            "platform": video.get("platform")
-        })
+    if not product_api_url:
+        print("❌ No product API URL found.")
+        return None
 
-    simplified_perspectives = []
-    for perspective in perspectives:
-        simplified_perspectives.append({
-            "author": perspective.get("author"),
-            "source": perspective.get("source"),
-            "extensions": perspective.get("extensions"),
-            "thumbnails": perspective.get("thumbnails"),
-            "title": perspective.get("title"),
-            "link": perspective.get("link"),
-            "date": perspective.get("date"),
-            "video": perspective.get("video")
-        })
 
-    result_data = {
-        "products": simplified_products,
-        "videos": simplified_videos,
-        "perspectives": simplified_perspectives,
-        "fetched_at": datetime.utcnow().isoformat()
+    parsed_url = urlparse(product_api_url)
+    product_params = parse_qs(parsed_url.query)
+    product_params = {k: v[0] for k, v in product_params.items()}
+    product_params["api_key"] = API_KEY  
+
+    product_res = requests.get("https://serpapi.com/search.json", params=product_params)
+    product_data = product_res.json()
+
+
+    extracted = {
+        "query": query,
+        "fetched_at": product_data.get("search_metadata", {}).get("created_at"),
+        "google_product_url": product_data.get("search_metadata", {}).get("google_product_url"),
     }
 
-    cache[query_key] = result_data
-    save_cache(cache)
-    return result_data
+    product = product_data.get("product_results", {})
+    extracted["pruduct_api_url"] = product_api_url
+    extracted["title"] = product.get("title")
+    extracted["description"] = product.get("description")
+    extracted["rating"] = product.get("rating")
+    extracted["reviews"] = product.get("reviews")
+    extracted["media"] = product.get("media", [])
 
+    prices = product.get("prices", [])
+    if prices:
+        extracted["price"] = prices[0]
 
+    related = product_data.get("related_products", {}).get("different_brand", [])
+    extracted["related_products"] = [
+        {
+            "title": r.get("title"),
+            "link": r.get("link"),
+            "thumbnail": r.get("thumbnail"),
+            "price": r.get("price"),
+            "rating": r.get("rating"),
+            "reviews": r.get("reviews"),
+        }
+        for r in related
+    ]
 
-q = input("Enter product query: ")
-data = fetch_immersive_products(q)
+    return extracted
 
-if not data["products"]:
-    print("No immersive products found.")
-else:
-    for i, p in enumerate(data["products"], 1):
-        print(f"\n[{i}] {p['title']}")
-        print(f"Price: {p['price']} | Rating: {p['rating']} ⭐ ({p['reviews']} reviews)")
-        print(f"Image: {p['image']}")
-        print(f"Source: {p['source']}")
-        print(f"Link: {p['serpapi_link']}")
+if __name__ == "__main__":
+    query = input("Enter your search query: ")
+    result = fetch_product_data(query)
 
-if data["videos"]:
-    print("\nInline Videos:")
-    for v in data["videos"]:
-        print(f"- {v['title']} ({v['duration']}) - {v['platform']} → {v['link']}")
+    if result:
+        print(json.dumps(result, indent=2))
 
-if data["perspectives"]:
-    print("\nPerspectives:")
-    for p in data["perspectives"]:
-        print(f"- {p['title']} by {p['author']} ({p['source']}) → {p['link']}")
+        fname = f"cache_{query.lower().replace(' ', '_')}.json"
+        with open(fname, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+            print(f"\n✅ Saved to {fname}")
