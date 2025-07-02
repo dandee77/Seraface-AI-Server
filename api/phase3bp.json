@@ -1,0 +1,50 @@
+{
+  "facial_wash": [
+    {
+      "name": "CeraVe Foaming Cleanser",
+      "price": "$10",
+      "priority_index": "0"
+    }
+  ],
+  "moisturizer": [
+    {
+      "name": "Celeteque Hydration Moisturizer",
+      "price": "$6",
+      "priority_index": "1"
+    }
+  ],
+  "sunscreen": [
+    {
+      "name": "Sunplay Skin Aqua Tone Up UV Essence SPF50+ PA++++",
+      "price": "$7",
+      "priority_index": "2"
+    }
+  ],
+  "future_recommendations": [
+    {
+      "toner": [
+        {
+          "name": "COSRX Hydrium Moisture Toner",
+          "price": "$8",
+          "priority_index": "3"
+        }
+      ],
+      "spot_treatment": [
+        {
+          "name": "Benzoyl Peroxide Gel",
+          "price": "$5",
+          "priority_index": "4"
+        }
+      ],
+      "treatment_serum": [
+        {
+          "name": "The Ordinary Niacinamide 10% + Zinc 1%",
+          "price": "$10",
+          "priority_index": "5"
+        }
+      ]
+    }
+  ],
+  "total_cost": "$38",
+  "remaining_budget": "$12"
+}

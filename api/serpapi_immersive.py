@@ -21,7 +21,7 @@ def save_cache(cache_data):
         json.dump(cache_data, f, indent=2)
 
 def fetch_product_data(query):
-    # Check cache first
+
     cache = load_cache()
     query_key = query.lower().strip()
 
@@ -31,7 +31,7 @@ def fetch_product_data(query):
 
     print("🔍 Not found in cache. Fetching from SerpAPI...")
 
-    # Step 1: Basic search
+  
     search_params = {
         "engine": "google",
         "q": query,
@@ -101,9 +101,10 @@ def fetch_product_data(query):
     print("✅ Fetched and cached.")
     return extracted
 
-if __name__ == "__main__":
-    query = input("Enter your search query: ")
-    result = fetch_product_data(query)
 
-    if result:
-        print(json.dumps(result, indent=2))
+# TODO: PASS THE FUNCTION LATER
+query = input("Enter your search query: ")
+result = fetch_product_data(query)
+
+if result:
+    print(json.dumps(result, indent=2))
