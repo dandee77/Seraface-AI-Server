@@ -15,6 +15,7 @@ dist-ssr
 .env
 .env.local
 __pycache__
+/uploaded_faces
 
 # Editor directories and files
 .vscode/*
