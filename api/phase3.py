@@ -97,7 +97,7 @@ Instructions:
 # ------------------------------
 def get_product_recommendations(
     category: str,
-    budget_percent: float,
+    category_budget: float,
     form_data: FormData,
     skin_analysis: Optional[SkinAnalysis] = None
 ) -> List[dict]:
@@ -108,11 +108,10 @@ You are a skincare product recommendation assistant.
 
 Instructions:
 - Recommend exactly 1 to 3 product options for the category: "{category}".
-- Base your decision on user's profile, skincare conditions, allergies, and budget.
-- The budget for this category is {budget_percent}% of the total budget (${form_data.budget}).
-- Recommend products that match their goals and needs.
-- Return a valid JSON list of objects with "name", "price" (e.g., "$10"), and "priority_index".
-- Do NOT include notes, markdown, or explanations — return raw JSON.
+- The **price of each recommended products must not exceed this amount: ${category_budget}**.
+- Recommend products that match their skin type, goals, allergies, and product experience.
+- Return a valid JSON list of objects with "name" and "price" (e.g., "$10").
+- Do NOT include notes, markdown, or explanations — return raw JSON only.
 
 User Profile:
 - Skin Type: {', '.join(form_data.skin_type)}
@@ -131,7 +130,6 @@ User Profile:
 
         print(f"📦 Raw Response for {category}:\n", raw)
 
-        # Clean triple backticks if any
         if raw.startswith("```"):
             raw = raw.strip("`").strip()
             if raw.startswith("json"):
@@ -156,13 +154,22 @@ def budget_distribution(data: dict):
         skin_analysis_data = data.get("skin_analysis")
         skin_analysis = SkinAnalysis(**skin_analysis_data) if skin_analysis_data else None
 
-        # Step 1: Get budget allocation
+        # Step 1: Get allocation percentages
         allocation = get_budget_allocation(form_data)
 
-        # Step 2: For each category, get product recommendations
+        # Convert budget string to float
+        raw_budget = form_data.budget.replace("$", "").strip()
+        try:
+            total_budget = float(raw_budget)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid budget format")
+
+        # Step 2: Calculate per-category dollar budget
         product_results = {}
         for i, (category, percent) in enumerate(allocation.items()):
-            products = get_product_recommendations(category, percent, form_data, skin_analysis)
+            category_budget = round((percent / 100) * total_budget, 2)
+            print(f"🧮 Budget for {category}: ${category_budget}")
+            products = get_product_recommendations(category, category_budget, form_data, skin_analysis)
             product_results[category] = products
 
         return {
