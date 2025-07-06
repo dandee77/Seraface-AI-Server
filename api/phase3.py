@@ -52,8 +52,33 @@ class SkinAnalysis(BaseModel):
 def get_budget_allocation(form_data: FormData) -> dict:
     model = genai.GenerativeModel("gemini-1.5-flash")
 
+    # ? Converts budget string (e.g., "$25") to float
+    try:
+        budget_value = float(form_data.budget.replace("$", "").strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid budget format.")
+
+    # ? selects allowed categories based on budget
+    allowed_categories = []
+    if budget_value <= 15:
+        allowed_categories = ["facial_wash", "moisturizer"]
+    elif budget_value <= 30:
+        allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment"]
+    elif budget_value <= 60:
+        allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment", "toner", "serum"]
+    else:
+        allowed_categories = [
+            "facial_wash", "moisturizer", "sunscreen", "treatment", "toner",
+            "serum", "eye_cream", "exfoliant", "mask", "essence", "ampoule"
+        ]
+
+    # Format for the prompt
+    categories_str = ", ".join(allowed_categories)
+
     prompt = f"""
 You are a skincare budget planning assistant. Based on the user's profile and skincare concerns, allocate their total skincare budget into percentage per product category.
+
+Only use from the following allowed categories (based on budget): {categories_str}
 
 User Profile:
 - Skin Type: {', '.join(form_data.skin_type)}
@@ -64,10 +89,8 @@ User Profile:
 - Budget: {form_data.budget}
 
 Instructions:
-- Output a valid JSON object with keys as category names (e.g., facial_wash, moisturizer, sunscreen, treatment, toner).
+- Output a valid JSON object with keys as category names (e.g., facial_wash, moisturizer, sunscreen).
 - The values must be raw numbers (not strings), and they must sum up to 100.
-- Example: {{ "facial_wash": 25, "moisturizer": 25, "sunscreen": 25, "treatment": 15, "toner": 10 }}
-- Categories should be prioritized based on skin concerns, goals, and essentials.
 - Do NOT include notes, explanations, or markdown — return pure JSON only.
 """
 
@@ -77,7 +100,6 @@ Instructions:
 
         print("🧪 Raw Budget Response:\n", raw)
 
-        # Clean triple backticks if any
         if raw.startswith("```"):
             raw = raw.strip("`").strip()
             if raw.startswith("json"):
@@ -107,7 +129,7 @@ def get_product_recommendations(
 You are a skincare product recommendation assistant.
 
 Instructions:
-- Recommend exactly 1 to 3 product options for the category: "{category}".
+- Recommend exactly 2 to 3 product options for the category: "{category}".
 - The **price of each recommended products must not exceed this amount: ${category_budget}**.
 - Recommend products that match their skin type, goals, allergies, and product experience.
 - Return a valid JSON list of objects with "name" and "price" (e.g., "$10").
@@ -142,12 +164,12 @@ User Profile:
         print("❌ Failed to parse product recommendation:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate product list for {category}")
 
+# TODO: ADD FUTURE RECOMMENDATIONS PROMPT 3
 
-
-# ------------------------------
+# ------------------------------  
 # Main API Route for Phase 3
 # ------------------------------
-@router.post("/phase3/budget-distribution")
+@router.post("/budget-distribution")
 def budget_distribution(data: dict):
     try:
         form_data = FormData(**data.get("form_data"))
