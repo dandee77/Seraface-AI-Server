@@ -26,7 +26,7 @@ def clean_response(text: str) -> str:
 
 
 def analyze_face_image(image: Image.Image):
-    model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+    model = genai.GenerativeModel(model_name="gemini-2.0-flash")
 
     prompt = """
 You are a skincare AI.

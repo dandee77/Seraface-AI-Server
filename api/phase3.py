@@ -50,7 +50,16 @@ class SkinAnalysis(BaseModel):
 # Step 1: Budget Distribution Prompt
 # ------------------------------
 def get_budget_allocation(form_data: FormData) -> dict:
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    """
+Generates a budget allocation based on user profile and skincare concerns.
+The budget is divided into four tiers based on the user's total budget:
+    Tier	     Priority	                    Description
+    🟢 Tier 1	Core Essentials	                Cleanser, Moisturizer, Sunscreen
+    🟡 Tier 2	First Add-ons	                Treatment, Toner, Serum, Spot Treatment
+    🟠 Tier 3	Specialized Boosters	        Eye Cream, Essence, Ampoule, Exfoliants
+    🔵 Tier 4	Occasional / Luxury	            Masks, Face Mist, Facial Oil, Neck Cream, Lip Care
+    """
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     # ? Converts budget string (e.g., "$25") to float
     try:
@@ -63,7 +72,7 @@ def get_budget_allocation(form_data: FormData) -> dict:
     if budget_value <= 15:
         allowed_categories = ["facial_wash", "moisturizer"]
     elif budget_value <= 30:
-        allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment"]
+        allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment"]   
     elif budget_value <= 60:
         allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment", "toner", "serum"]
     else:
@@ -72,7 +81,6 @@ def get_budget_allocation(form_data: FormData) -> dict:
             "serum", "eye_cream", "exfoliant", "mask", "essence", "ampoule"
         ]
 
-    # Format for the prompt
     categories_str = ", ".join(allowed_categories)
 
     prompt = f"""
@@ -113,7 +121,7 @@ Instructions:
         raise HTTPException(status_code=500, detail="Failed to parse budget allocation")
 
 
-
+# TODO: ADD ATTR: "REASON WHY" TO PRODUCT RECOMMENDATIONS
 # ------------------------------
 # Step 2: Product Recommendation Prompt
 # ------------------------------
@@ -123,7 +131,7 @@ def get_product_recommendations(
     form_data: FormData,
     skin_analysis: Optional[SkinAnalysis] = None
 ) -> List[dict]:
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     prompt = f"""
 You are a skincare product recommendation assistant.
@@ -164,8 +172,75 @@ User Profile:
         print("❌ Failed to parse product recommendation:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate product list for {category}")
 
-# TODO: ADD FUTURE RECOMMENDATIONS PROMPT 3
 
+# TODO: ADD FUTURE RECOMMENDATIONS PROMPT 3
+# ! REMOVED: PRIORITY INDEXES, IDK IF THEY ARE EVEN NEEDED NGL
+def get_future_recommendations(
+    form_data: FormData,
+    current_categories: List[str],
+    skin_analysis: Optional[SkinAnalysis] = None,
+) -> List[dict]:
+    model = genai.GenerativeModel("gemini-2.0-flash")
+
+    # ? Convert budget string (e.g., "$25") to float
+    numeric_budget = float(form_data.budget.replace("$", "").strip())
+
+    prompt = f"""
+You are a skincare assistant helping a user expand their skincare routine *gradually*.
+
+User Profile:
+- Skin Type: {', '.join(form_data.skin_type)}
+- Skin Conditions: {', '.join(form_data.skin_conditions)}
+- Goals: {', '.join(form_data.goals + ([form_data.custom_goal] if form_data.custom_goal else []))}
+- Allergies: {', '.join(form_data.allergies)}
+- Budget Tier: {"Low" if numeric_budget <= 30 else "Medium" if numeric_budget <= 80 else "High"}
+
+Current routine already includes the following categories:
+- {', '.join(current_categories)}
+
+Instructions:
+1. Suggest 2 to 4 product **categories** the user can consider next, based on their goals and needs.
+2. The new categories must NOT include or duplicate the current ones.
+3. Each suggestion must include:
+   - "category" (e.g., "serum", "clay_mask", "eye_cream")
+   - One example product with:
+       - "name"
+       - "price" (in USD like "$12")
+
+4. Output a valid JSON array of objects like:
+[
+  {{
+    "category": "serum",
+    "products": [{{ "name": "Product", "price": "$X" }}]
+  }},
+  ...
+]
+
+5. Do NOT include explanations, notes, or markdown — only valid JSON output.
+"""
+
+    if skin_analysis:
+        prompt += f"\n\nSkin Analysis:\n{skin_analysis.model_dump_json(indent=2)}"
+
+    try:
+        response = model.generate_content(prompt)
+        raw = getattr(response, 'text', '').strip()
+        print("🧪 Raw Future Recommendations:\n", raw)
+
+        if raw.startswith("```"):
+            raw = raw.strip("`").strip()
+            if raw.startswith("json"):
+                raw = raw[4:].strip()
+
+        parsed = json.loads(raw)
+        return parsed
+
+    except Exception as e:
+        print("❌ Failed to parse future recommendations:", e)
+        raise HTTPException(status_code=500, detail="Failed to generate future recommendations")
+
+
+# NOTE TO MY DEMENTIA AHH SELF: No more budget_remaining + total_cost calculations here. As it will be based on the user's choice of products.
 # ------------------------------  
 # Main API Route for Phase 3
 # ------------------------------
@@ -176,27 +251,36 @@ def budget_distribution(data: dict):
         skin_analysis_data = data.get("skin_analysis")
         skin_analysis = SkinAnalysis(**skin_analysis_data) if skin_analysis_data else None
 
-        # Step 1: Get allocation percentages
+        # Step 1: Budget allocation
         allocation = get_budget_allocation(form_data)
 
-        # Convert budget string to float
-        raw_budget = form_data.budget.replace("$", "").strip()
-        try:
-            total_budget = float(raw_budget)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid budget format")
+        # Step 2: Convert total budget
+        total_budget = float(form_data.budget.replace("$", "").strip())
 
-        # Step 2: Calculate per-category dollar budget
+        # Step 3: Generate product recommendations
         product_results = {}
-        for i, (category, percent) in enumerate(allocation.items()):
+        product_categories = list(allocation.keys())
+
+        for category, percent in allocation.items():
             category_budget = round((percent / 100) * total_budget, 2)
             print(f"🧮 Budget for {category}: ${category_budget}")
             products = get_product_recommendations(category, category_budget, form_data, skin_analysis)
             product_results[category] = products
 
+        # Step 4: Generate future recommendations
+        future = get_future_recommendations(
+            form_data,
+            current_categories=product_categories,
+            skin_analysis=skin_analysis
+        )
+
+        print("categories:", product_categories)
+
         return {
             "allocation": allocation,
-            "products": product_results
+            "products": product_results,
+            "total_budget": f"${total_budget}",
+            "future_recommendations": future
         }
 
     except Exception as e:
