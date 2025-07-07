@@ -143,19 +143,24 @@ def get_routine_for_user(form_data: FormData, product_recommendations: dict) -> 
         print("❌ Failed to generate skincare routine:", e)
         raise HTTPException(status_code=500, detail="Failed to create skincare routine")
 
-
 # ------------------------------
 # API Route for Phase 4: Routine Creation
 # ------------------------------
 @router.post("/routine-creation")
 def create_routine(data: dict):
+    """
+    Endpoint to create a personalized skincare routine based on user data and product recommendations.
+    Accepts structured data about skin type, conditions, allergies, product experiences, goals, and
+    product recommendations.
+    - data: The structured form data and product recommendations to create the routine.
+    - Returns a RoutineResponse containing the product type and a list of routine steps.
+    """
     try:
         form_data = FormData(**data.get("form_data", {}))
         product_recommendations = data.get("product_recommendations", {})
 
         if not product_recommendations:
             raise HTTPException(status_code=400, detail="No product recommendations provided")
-
 
         routine = get_routine_for_user(form_data, product_recommendations)
 
@@ -169,3 +174,36 @@ def create_routine(data: dict):
     except Exception as e:
         print("❌ Error in /phase4/routine-creation:", str(e))
         raise HTTPException(status_code=500, detail="Failed to create skincare routine")
+    
+# Example JSON Input for Testing
+    """
+{
+    "form_data": {
+        "skin_type": ["oily", "sensitive"],
+        "skin_conditions": ["acne", "hyperpigmentation"],
+        "budget": "$100",
+        "allergies": ["fragrance", "alcohol"],
+        "product_experiences": [
+        { "product": "CeraVe Cleanser", "experience": "good", "brand": "CeraVe" },
+        { "product": "BrandX Toner", "experience": "bad", "brand": "BrandX" },
+        { "product": "Safeguard Soap", "experience": "neutral", "brand": "Safeguard" }
+        ],
+        "goals": ["clear acne", "even out tone"],
+        "custom_goal": "reduce redness"
+    },
+    "product_recommendations": {
+        "cleanser": {
+        "product_name": "CeraVe Renewing SA Cleanser"
+        },
+        "treatment": {
+        "product_name": "The Ordinary Niacinamide 10% + Zinc 1%"
+        },
+        "moisturizer": {
+        "product_name": "Neutrogena Hydro Boost Water Gel"
+        },
+        "sunscreen": {
+        "product_name": "La Roche-Posay Anthelios SPF 50"
+        }
+    }
+}
+    """
