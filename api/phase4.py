@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Literal
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-from phase1 import FormData, ProductExperience
 import json
 
 load_dotenv()
@@ -12,23 +11,34 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 router = APIRouter()
 
-class ProductRecommendation(BaseModel):
-    name: str
-    price: str
-    priority_index: int
 
 class RoutineStep(BaseModel):
     name: str
+    tag: str
     description: str
     instructions: List[str]
-    duration: str
-    waiting_time: str
-    time_of_use: str
-    days_of_use: Dict[str, bool]  # E.g., Monday, Tuesday, etc.
+    duration: int
+    waiting_time: int
+    days: Dict[str, bool]
+    time: List[str]
 
 class RoutineResponse(BaseModel):
     product_type: str
     routine: List[RoutineStep]
+
+class ProductExperience(BaseModel):
+    product: str
+    experience: Literal["good", "bad", "neutral"]
+    reason: Optional[str] = None
+
+class FormData(BaseModel):
+    skin_type: List[Literal["oily", "dry", "combination", "normal", "sensitive", "acne-prone"]]
+    skin_conditions: List[str]
+    budget: str
+    allergies: List[str]
+    product_experiences: List[ProductExperience]
+    goals: List[str]
+    custom_goal: Optional[str] = None
     
 
 # TODO: PASS FACE ANALYSIS DATA
@@ -39,10 +49,12 @@ def get_routine_for_user(form_data: FormData, product_recommendations: dict) -> 
     model = genai.GenerativeModel("gemini-1.5-flash")
 
     user_profile = f"""
-    Skin Type: {', '.join(form_data.skin_type)}
-    Skin Conditions: {', '.join(form_data.skin_conditions)}
-    Goals: {', '.join(form_data.goals + ([form_data.custom_goal] if form_data.custom_goal else []))}
-    Allergies: {', '.join(form_data.allergies)}
+    User Profile:
+    - Skin Type: {', '.join(form_data.skin_type)}
+    - Skin Conditions: {', '.join(form_data.skin_conditions)}
+    - Allergies: {', '.join(form_data.allergies)}
+    - Product Experiences: {[f"{p.product} ({p.experience})" for p in form_data.product_experiences]}
+    - Goals: {', '.join(form_data.goals + ([form_data.custom_goal] if form_data.custom_goal else []))}
     """
 
     prompt = f"""
@@ -66,6 +78,7 @@ def get_routine_for_user(form_data: FormData, product_recommendations: dict) -> 
     Example:
     "cleanser": {{
         "name": "CeraVe Renewing SA Cleanser",
+        "tag": "Gentle Hydrating Cleanser",
         "description": "Ideal for daily use, removes dirt and impurities",
         "instructions": [
             "Wet face with lukewarm water.",
@@ -88,6 +101,7 @@ def get_routine_for_user(form_data: FormData, product_recommendations: dict) -> 
     }},
     "moisturizer": {{
         "name": "Neutrogena Hydro Boost Water Gel",
+        "tag": "Hyaluronic Acid Moisturizer",
         "description": "Hydrates and replenishes moisture",
         "instructions": [
             "Take a small amount and gently apply to face and neck.",
@@ -110,33 +124,47 @@ def get_routine_for_user(form_data: FormData, product_recommendations: dict) -> 
 
     try:
         response = model.generate_content(prompt)
-        routine = json.loads(response.text.strip())
+        raw = getattr(response, 'text', '').strip()
+
+        if raw.startswith("```"):
+            raw = raw.strip("`").strip()
+            if raw.startswith("json"):
+                raw = raw[4:].strip()
+
+        print("🧪 Raw Response:", raw)
+
+        if not raw:
+            raise ValueError("Received an empty response from the AI model.")
+
+        routine = json.loads(raw) 
         return routine
+
     except Exception as e:
         print("❌ Failed to generate skincare routine:", e)
         raise HTTPException(status_code=500, detail="Failed to create skincare routine")
 
 
-
 # ------------------------------
 # API Route for Phase 4: Routine Creation
 # ------------------------------
-@router.post("/phase4/routine-creation")
+@router.post("/routine-creation")
 def create_routine(data: dict):
     try:
-        form_data = FormData(**data.get("form_data"))
-        product_recommendations = data.get("product_recommendations")
+        form_data = FormData(**data.get("form_data", {}))
+        product_recommendations = data.get("product_recommendations", {})
 
-        # Generate the routine creation prompt
-        prompt = get_routine_for_user(form_data, product_recommendations)
+        if not product_recommendations:
+            raise HTTPException(status_code=400, detail="No product recommendations provided")
 
-        # Call the Gemini AI model to generate the routine
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
 
-        # Parse the response and return
-        routine = json.loads(response.text)
-        return {"routine": routine}
+        routine = get_routine_for_user(form_data, product_recommendations)
+
+        if isinstance(routine, dict):
+            routine_list = list(routine.values())
+        else:
+            routine_list = routine
+
+        return RoutineResponse(product_type="custom", routine=routine_list)
 
     except Exception as e:
         print("❌ Error in /phase4/routine-creation:", str(e))

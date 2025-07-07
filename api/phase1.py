@@ -7,7 +7,7 @@ router = APIRouter()
 # ------- Pydantic Models -------- #
 
 class ProductExperience(BaseModel):
-    brand: str
+    product: str
     experience: Literal["good", "bad", "neutral"]
     reason: Optional[str] = None
 
