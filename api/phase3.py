@@ -46,6 +46,8 @@ class SkinAnalysis(BaseModel):
     skin_elasticity: Optional[str]
 
 
+# TODO: TAKE THE WEATHER INTO ACCOUNT FOR RECOMMENDATIONS
+
 # ------------------------------
 # Step 1: Budget Distribution Prompt
 # ------------------------------
@@ -173,7 +175,6 @@ User Profile:
         raise HTTPException(status_code=500, detail=f"Failed to generate product list for {category}")
 
 
-# TODO: ADD FUTURE RECOMMENDATIONS PROMPT 3
 # ! REMOVED: PRIORITY INDEXES, IDK IF THEY ARE EVEN NEEDED NGL
 def get_future_recommendations(
     form_data: FormData,
