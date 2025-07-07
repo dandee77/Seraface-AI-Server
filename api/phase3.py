@@ -287,3 +287,166 @@ def budget_distribution(data: dict):
     except Exception as e:
         print("❌ Error in /phase3/budget-distribution:", str(e))
         raise HTTPException(status_code=500, detail="Failed to complete budget distribution phase")
+
+
+# Example JSON Input for Testing
+"""
+{
+  "form_data": {
+    "skin_type": ["oily", "sensitive"],
+    "skin_conditions": ["acne", "hyperpigmentation"],
+    "budget": "$100",
+    "allergies": ["fragrance", "alcohol"],
+    "product_experiences": [
+      { "product": "CeraVe Cleanser", "experience": "good" },
+      { "product": "BrandX Toner", "experience": "bad" },
+      { "product": "Safeguard Soap", "experience": "neutral" }
+    ],
+    "goals": ["clear acne", "even out tone"],
+    "custom_goal": "reduce redness"
+  },
+  "skin_analysis": {
+    "redness_irritation": "moderate",
+    "acne_breakouts": {
+      "severity": "moderate",
+      "count_estimate": 6,
+      "location": ["cheeks", "chin"]
+    },
+    "blackheads_whiteheads": {
+      "presence": true,
+      "location": ["nose"]
+    },
+    "oiliness_shine": {
+      "level": "high",
+      "location": ["T-zone", "cheeks"]
+    },
+    "dryness_flaking": {
+      "presence": false,
+      "location": []
+    },
+    "uneven_skin_tone": "moderate",
+    "dark_spots_scars": {
+      "presence": true,
+      "description": "Post-acne marks"
+    },
+    "pores_size": {
+      "level": "large",
+      "location": ["cheeks", "nose"]
+    },
+    "hormonal_acne_signs": "yes",
+    "stress_related_flareups": "yes",
+    "dehydrated_skin_signs": "yes",
+    "fine_lines_wrinkles": {
+      "presence": false,
+      "areas": []
+    },
+    "skin_elasticity": "average"
+  }
+}
+"""
+
+# Example Output
+"""
+{
+  "allocation": {
+    "facial_wash": 15,
+    "moisturizer": 15,
+    "sunscreen": 20,
+    "treatment": 30,
+    "serum": 10,
+    "exfoliant": 10
+  },
+  "products": {
+    "facial_wash": [
+      {
+        "name": "Neutrogena Oil-Free Acne Wash",
+        "price": "$8"
+      },
+      {
+        "name": "Vanicream Gentle Facial Cleanser",
+        "price": "$11"
+      }
+    ],
+    "moisturizer": [
+      {
+        "name": "Neutrogena Oil-Free Acne Moisturizer Pink Grapefruit",
+        "price": "$12"
+      },
+      {
+        "name": "Vanicream Daily Facial Moisturizer",
+        "price": "$14"
+      }
+    ],
+    "sunscreen": [
+      {
+        "name": "Neutrogena Clear Face Liquid Lotion Sunscreen SPF 55",
+        "price": "$12"
+      },
+      {
+        "name": "La Roche-Posay Anthelios Melt-In Sunscreen Milk SPF 60",
+        "price": "$19.99"
+      }
+    ],
+    "treatment": [
+      {
+        "name": "The Ordinary Niacinamide 10% + Zinc 1%",
+        "price": "$6.00"
+      },
+      {
+        "name": "Paula's Choice 2% BHA Liquid Exfoliant Travel Size",
+        "price": "$13.00"
+      }
+    ],
+    "serum": [
+      {
+        "name": "The Ordinary Niacinamide 10% + Zinc 1%",
+        "price": "$6.00"
+      },
+      {
+        "name": "Good Molecules Discoloration Correcting Serum",
+        "price": "$8.00"
+      }
+    ],
+    "exfoliant": [
+      {
+        "name": "Stridex Essential Pads Maximum Strength",
+        "price": "$6"
+      },
+      {
+        "name": "Neutrogena Oil-Free Acne Wash Redness Soothing Facial Cleanser",
+        "price": "$8"
+      }
+    ]
+  },
+  "total_budget": "$100.0",
+  "future_recommendations": [
+    {
+      "category": "clay_mask",
+      "products": [
+        {
+          "name": "Paula's Choice INCREDIBLY CLEAR Pore Clarifying Charcoal Mask",
+          "price": "$28"
+        }
+      ]
+    },
+    {
+      "category": "spot_treatment",
+      "products": [
+        {
+          "name": "La Roche-Posay Effaclar Duo Acne Spot Treatment",
+          "price": "$37"
+        }
+      ]
+    },
+    {
+      "category": "face_oil",
+      "products": [
+        {
+          "name": "Kiehl's Cannabis Sativa Seed Oil Herbal Concentrate",
+          "price": "$52"
+        }
+      ]
+    }
+  ]
+}
+"""

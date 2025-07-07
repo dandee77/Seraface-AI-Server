@@ -176,7 +176,7 @@ def create_routine(data: dict):
         raise HTTPException(status_code=500, detail="Failed to create skincare routine")
     
 # Example JSON Input for Testing
-    """
+"""
 {
     "form_data": {
         "skin_type": ["oily", "sensitive"],
@@ -206,4 +206,95 @@ def create_routine(data: dict):
         }
     }
 }
-    """
+"""
+
+# Example JSON Output for Testing
+"""
+"cleanser": {
+    "name": "CeraVe Renewing SA Cleanser",
+    "tag": "Gentle Exfoliating Cleanser",
+    "description": "Ideal for daily use, removes dirt and impurities without stripping skin's natural moisture barrier.",
+    "instructions": [
+        "Wet face with lukewarm water.",
+        "Apply a small amount to face and neck.",
+        "Massage gently in circular motions.",
+        "Rinse thoroughly with lukewarm water."
+        ],
+    "duration": 30,
+    "waiting_time": 900,
+    "days": {
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": true,
+        "sunday": true
+        },
+    "time": ["morning", "night"]
+},
+"treatment": {
+    "name": "The Ordinary Niacinamide 10% + Zinc 1%",
+    "tag": "Acne Treatment Serum",
+    "description": "Reduces acne, redness, and hyperpigmentation. Contains niacinamide and zinc to control oil production and soothe inflammation.",
+    "instructions": [
+        "Apply a pea-sized amount to the entire face.",
+        "Gently pat into the skin."
+        ],
+    "duration": 15,
+    "waiting_time": 600,
+    "days": {
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": true,
+        "sunday": true
+        },
+    "time": ["night"]
+},
+"moisturizer": {
+    "name": "Neutrogena Hydro Boost Water Gel",
+    "tag": "Lightweight Hydrating Moisturizer",
+    "description": "Provides lightweight hydration without clogging pores.",
+    "instructions": [
+        "Take a small amount and gently apply to face and neck.",
+        "Massage in upward circular motions."
+        ],
+    "duration": 20,
+    "waiting_time": 0,
+    "days": {
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": true,
+        "sunday": true
+        },
+    "time": ["morning", "night"]
+},
+"sunscreen": {
+    "name": "La Roche-Posay Anthelios SPF 50",
+    "tag": "Broad Spectrum Sunscreen",
+    "description": "Protects against UVA and UVB rays, essential for preventing hyperpigmentation and sun damage.",
+    "instructions": [
+        "Apply liberally 15 minutes before sun exposure.",
+        "Reapply every two hours, or more frequently if swimming or sweating."
+        ],
+    "duration": 30,
+    "waiting_time": 0,
+    "days": {
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": true,
+        "sunday": true
+        },
+    "time": ["morning"]
+    }
+}
+"""
