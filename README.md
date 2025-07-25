@@ -26,19 +26,32 @@ Seraface-AI-Server/
 ├── app/
 │   ├── core/
 │   │   ├── __init__.py
+│   │   ├── config.py            # Configuration management
 │   │   └── database.py          # Database configuration
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── schemas.py           # Pydantic models
+│   │   ├── product_schemas.py   # Product Pydantic models
+│   │   └── skincare/            # Skincare AI schemas
+│   │       ├── __init__.py
+│   │       ├── form_schemas.py
+│   │       ├── analysis_schemas.py
+│   │       └── recommendation_schemas.py
 │   ├── routers/
 │   │   ├── __init__.py
 │   │   └── products.py          # Product API endpoints
 │   ├── services/
 │   │   ├── __init__.py
 │   │   └── product_service.py   # Business logic
+│   ├── data/                    # JSON storage for phase data
+│   ├── ai_router.py             # AI pipeline endpoints
+│   ├── connection_logic.py      # Phase connection logic
+│   ├── phase1.py                # Form processing
+│   ├── phase2.py                # Image analysis
+│   ├── phase3.py                # Product recommendation
+│   ├── phase4.py                # Routine creation
 │   ├── __init__.py
 │   └── main.py                  # FastAPI application
-├── .env.example                 # Environment variables template
+├── .env                         # Environment variables
 ├── main.py                      # Application entry point
 ├── requirements.txt             # Python dependencies
 └── README.md

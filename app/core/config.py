@@ -22,6 +22,10 @@ class Settings:
     DATABASE_NAME: str = os.getenv("DATABASE_NAME", "seraface")
     PRODUCTS_COLLECTION: str = os.getenv("PRODUCTS_COLLECTION", "products_cache")
     
+    # AI Configuration
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", "")
+    
     # API Configuration
     API_VERSION: str = os.getenv("API_VERSION", "v1")
     API_PREFIX: str = f"/api/{API_VERSION}"

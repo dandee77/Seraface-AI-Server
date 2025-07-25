@@ -1,7 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from ..core import Database
-from ..models import ProductCreate, ProductResponse
+from ..models.product_schemas import ProductCreate, ProductResponse
 
 
 class ProductService:

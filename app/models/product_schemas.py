@@ -1,16 +1,17 @@
 from typing import List, Optional
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
+from datetime import datetime
 
 
 class MediaItem(BaseModel):
     type: str
-    link: str  
+    link: str  # Changed from HttpUrl to str for MongoDB compatibility
 
 
 class RelatedProduct(BaseModel):
     title: str
-    link: str  
-    thumbnail: str  
+    link: str  # Changed from HttpUrl to str for MongoDB compatibility
+    thumbnail: str  # Changed from HttpUrl to str for MongoDB compatibility
     price: str
     rating: Optional[float] = None
     reviews: Optional[int] = None
@@ -19,8 +20,8 @@ class RelatedProduct(BaseModel):
 class ProductBase(BaseModel):
     query: str
     fetched_at: str
-    google_product_url: Optional[str] = None
-    product_api_url: Optional[str] = None
+    google_product_url: Optional[str] = None  
+    product_api_url: Optional[str] = None  
     title: str
     description: str
     rating: Optional[float] = None
@@ -39,7 +40,7 @@ class ProductInDB(ProductBase):
     key: str
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True  # Updated for Pydantic v2
 
 
 class ProductResponse(ProductBase):
@@ -47,4 +48,4 @@ class ProductResponse(ProductBase):
     key: str
 
     class Config:
-        from_attributes = True  
+        from_attributes = True  # Updated for Pydantic v2

@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, status
-from ..models import ProductCreate, ProductResponse
+from ..models.product_schemas import ProductCreate, ProductResponse
 from ..services import ProductService
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -17,7 +17,6 @@ async def get_all_products():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve products: {str(e)}"
         )
-
 
 @router.get("/{key}", response_model=ProductResponse)
 async def get_product_by_key(key: str):
