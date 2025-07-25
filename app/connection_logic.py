@@ -6,15 +6,20 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 
 class DataStore:
-    """Handles JSON file storage for phase data"""
+    """Handles JSON file storage for phase data with organized directory structure"""
     
     def __init__(self):
         self.data_dir = Path(__file__).parent / "data"
         self.data_dir.mkdir(exist_ok=True)
+        
+        for phase in ["phase1", "phase2", "phase3", "phase4"]:
+            phase_dir = self.data_dir / phase
+            phase_dir.mkdir(exist_ok=True)
     
     def _get_file_path(self, session_id: str, phase: str) -> Path:
-        """Get file path for a specific session and phase"""
-        return self.data_dir / f"{session_id}_{phase}.json"
+        """Get file path for a specific session and phase in organized structure"""
+        phase_dir = self.data_dir / phase
+        return phase_dir / f"{session_id}.json"
     
     def save_phase_data(self, session_id: str, phase: str, data: Dict[Any, Any]) -> bool:
         """Save phase data to JSON file"""
@@ -78,5 +83,4 @@ class DataStore:
         return str(uuid.uuid4())
 
 
-# Global instance
 data_store = DataStore()
