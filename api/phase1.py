@@ -9,7 +9,7 @@ router = APIRouter()
 class ProductExperience(BaseModel):
     product: str
     experience: Literal["good", "bad", "neutral"]
-    reason: Optional[str] = None
+    reason: Optional[str] = None    
 
 class FormData(BaseModel):
     skin_type: List[Literal["oily", "dry", "combination", "normal", "sensitive", "acne-prone"]]
