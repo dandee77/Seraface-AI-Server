@@ -148,5 +148,5 @@ class Phase4Service:
             print("❌ Error in routine creation:", str(e))
             raise HTTPException(status_code=500, detail="Failed to create skincare routine")
 
-
+    
 phase4_service = Phase4Service()

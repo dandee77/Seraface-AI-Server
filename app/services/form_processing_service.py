@@ -13,7 +13,6 @@ class Phase1Service:
     """Service for Phase 1: Form Processing (Original logic preserved)"""
     
     def __init__(self):
-        # In-memory storage (same as original)
         self.submitted_forms = []
     
     def submit_form(self, data: FormData) -> Dict[str, Any]:

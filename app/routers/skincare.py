@@ -47,7 +47,7 @@ async def phase1_form_analysis(form_data: FormData) -> Dict[str, Any]:
         session_id = data_store.create_session()
         form_dict = result["stored_data"].dict() if hasattr(result["stored_data"], 'dict') else result["stored_data"]
         
-        success = data_store.save_phase_data(session_id, "phase1", form_dict)
+        success = await data_store.save_phase_data(session_id, "phase1", form_dict)
         
         if not success:
             raise HTTPException(
@@ -87,14 +87,13 @@ async def phase2_image_analysis(session_id: str, file: UploadFile = File(...)) -
     Stores analysis results as JSON for Phase 3.
     """
     try:
-        # Validate session exists
-        if not data_store.session_exists(session_id):
+
+        if not await data_store.session_exists(session_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Session not found. Complete Phase 1 first."
             )
         
-        # Validate file type
         if not file.content_type.startswith("image/"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -112,7 +111,7 @@ async def phase2_image_analysis(session_id: str, file: UploadFile = File(...)) -
             analysis_json = analysis_result
         
         # Save analysis for Phase 3
-        success = data_store.save_phase_data(session_id, "phase2", analysis_json)
+        success = await data_store.save_phase_data(session_id, "phase2", analysis_json)
         
         if not success:
             raise HTTPException(
@@ -158,8 +157,8 @@ async def phase3_product_recommendations(session_id: str) -> ProductRecommendati
     """
     try:
         # Get data from previous phases
-        form_data = data_store.load_phase_data(session_id, "phase1")
-        analysis_data = data_store.load_phase_data(session_id, "phase2")
+        form_data = await data_store.load_phase_data(session_id, "phase1")
+        analysis_data = await data_store.load_phase_data(session_id, "phase2")
         
         if not form_data:
             raise HTTPException(
@@ -183,7 +182,7 @@ async def phase3_product_recommendations(session_id: str) -> ProductRecommendati
         recommendations = phase3_service.budget_distribution(phase3_input)
         
         # Save recommendations for Phase 4
-        success = data_store.save_phase_data(session_id, "phase3", recommendations)
+        success = await data_store.save_phase_data(session_id, "phase3", recommendations)
         
         if not success:
             raise HTTPException(
@@ -222,8 +221,8 @@ async def phase4_routine_creation(session_id: str) -> SkincareRoutineResponse:
     """
     try:
         # Get data from previous phases
-        form_data = data_store.load_phase_data(session_id, "phase1")
-        recommendations = data_store.load_phase_data(session_id, "phase3")
+        form_data = await data_store.load_phase_data(session_id, "phase1")
+        recommendations = await data_store.load_phase_data(session_id, "phase3")
         
         if not form_data:
             raise HTTPException(
@@ -247,7 +246,7 @@ async def phase4_routine_creation(session_id: str) -> SkincareRoutineResponse:
         routine_result = phase4_service.create_routine(phase4_input)
         
         # Save final routine
-        success = data_store.save_phase_data(session_id, "phase4", routine_result)
+        success = await data_store.save_phase_data(session_id, "phase4", routine_result)
         
         if not success:
             raise HTTPException(
@@ -283,13 +282,14 @@ async def get_session_status(session_id: str) -> Dict[str, Any]:
     - Next recommended phase
     """
     try:
-        if not data_store.session_exists(session_id):
+        if not await data_store.session_exists(session_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Session not found"
             )
         
-        phase_status = data_store.get_session_status(session_id)
+        phase_status_result = await data_store.get_session_status(session_id)
+        phase_status = phase_status_result.get("phases", {})
         completed_phases = [phase for phase, completed in phase_status.items() if completed]
         
         # Determine next phase
@@ -309,7 +309,7 @@ async def get_session_status(session_id: str) -> Dict[str, Any]:
             "session_id": session_id,
             "completed_phases": completed_phases,
             "total_phases": 4,
-            "progress_percentage": len(completed_phases) * 25,
+            "progress_percentage": phase_status_result.get("progress_percentage", 0),
             "next_phase": next_phase,
             "phase_details": phase_status,
             "pipeline_complete": len(completed_phases) == 4

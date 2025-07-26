@@ -28,5 +28,4 @@ class Database:
         return db[settings.PRODUCTS_COLLECTION]
 
 
-# For backward compatibility (if needed)
 DatabaseConfig = settings
