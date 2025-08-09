@@ -6,10 +6,8 @@ from .routers.skincare import router as skincare_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     Database.connect()
     yield
-    # Shutdown
     Database.disconnect()
 
 

@@ -2,7 +2,8 @@
 Phase 3 Service: Product Recommendation and Budget Distribution
 
 Generates personalized product recommendations based on form data and image analysis.
-PRESERVED ORIGINAL LOGIC - Only extracted into service class.
+Integrates with SerpAPI for product search and MongoDB for storage.
+PRESERVED ORIGINAL LOGIC - Added product search integration.
 """
 
 import json
@@ -11,6 +12,7 @@ from fastapi import HTTPException
 from typing import List, Dict, Any
 from ..core.config import settings
 from ..models.skincare.form_schemas import FormData, ProductExperience
+from .product_search_service import product_search_service
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -238,13 +240,134 @@ Format:
         except Exception as e:
             print("❌ Failed to parse future recommendations:", e)
             raise HTTPException(status_code=500, detail="Failed to generate future recommendations")
-
-    def budget_distribution(self, data: dict) -> Dict[str, Any]:
+    
+    async def enrich_products_with_details(self, products: Dict[str, List[Dict[str, Any]]], session_id: str, context: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Main budget distribution function - ORIGINAL LOGIC PRESERVED
+        Search for detailed product information and store in database.
         
-        NOTE TO MY DEMENTIA AHH SELF: No more budget_remaining + total_cost calculations here. 
-        As it will be based on the user's choice of products.
+        This method:
+        1. Takes AI-recommended product names
+        2. Searches for each product in the database cache
+        3. If not found, fetches from SerpAPI and stores in cache
+        4. Stores user's recommended products linked to session_id
+        """
+        enriched_products = {}
+        
+        try:
+            for category, product_list in products.items():
+                enriched_category = []
+                
+                for product in product_list:
+                    product_name = product.get("name", "")
+                    recommended_price = product.get("price", "$0.00")
+                    
+                    if not product_name:
+                        continue
+                    
+                    print(f"🔍 Searching for product details: {product_name}")
+                    
+                    # Create recommendation context for this product
+                    recommendation_context = {
+                        "category": category,
+                        "recommended_price": recommended_price,
+                        "user_context": context,
+                        "ai_recommended": True
+                    }
+                    
+                    # Search for product details (cache first, then SerpAPI)
+                    product_details = await product_search_service.get_or_fetch_product(
+                        query=product_name,
+                        session_id=session_id,
+                        recommendation_context=recommendation_context
+                    )
+                    
+                    if product_details:
+                        # Combine AI recommendation with detailed product data
+                        enriched_product = {
+                            "ai_recommendation": product,  # Original AI recommendation
+                            "product_details": product_details,  # Detailed product info from SerpAPI
+                            "category": category,
+                            "enriched_at": product_details.get("fetched_at"),
+                            "search_successful": True
+                        }
+                        print(f"✅ Successfully enriched: {product_name}")
+                    else:
+                        # Keep original recommendation if search fails
+                        enriched_product = {
+                            "ai_recommendation": product,
+                            "product_details": None,
+                            "category": category,
+                            "search_successful": False,
+                            "error": "Product details not found"
+                        }
+                        print(f"⚠️  Could not find details for: {product_name}")
+                    
+                    enriched_category.append(enriched_product)
+                
+                enriched_products[category] = enriched_category
+            
+            return enriched_products
+            
+        except Exception as e:
+            print(f"❌ Error enriching products: {e}")
+            # Return original products if enrichment fails
+            return {category: [{"ai_recommendation": p, "product_details": None, "search_successful": False} for p in products] for category, products in products.items()}
+    
+    async def enrich_future_recommendations(self, future_recommendations: List[Dict[str, Any]], session_id: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Enrich future recommendations with product details"""
+        enriched_future = []
+        
+        try:
+            for recommendation in future_recommendations:
+                category = recommendation.get("category", "")
+                products = recommendation.get("products", [])
+                
+                enriched_products = []
+                for product in products:
+                    product_name = product.get("name", "")
+                    
+                    if product_name:
+                        recommendation_context = {
+                            "category": category,
+                            "recommended_price": product.get("price", "$0.00"),
+                            "user_context": context,
+                            "ai_recommended": True,
+                            "future_recommendation": True
+                        }
+                        
+                        product_details = await product_search_service.get_or_fetch_product(
+                            query=product_name,
+                            session_id=session_id,
+                            recommendation_context=recommendation_context
+                        )
+                        
+                        enriched_product = {
+                            "ai_recommendation": product,
+                            "product_details": product_details,
+                            "search_successful": product_details is not None
+                        }
+                        enriched_products.append(enriched_product)
+                
+                enriched_future.append({
+                    "category": category,
+                    "products": enriched_products
+                })
+            
+            return enriched_future
+            
+        except Exception as e:
+            print(f"❌ Error enriching future recommendations: {e}")
+            return future_recommendations
+
+    async def budget_distribution(self, data: dict, session_id: str) -> Dict[str, Any]:
+        """
+        Main budget distribution function with product search integration.
+        
+        ENHANCED WORKFLOW:
+        1. Generate AI recommendations (original logic preserved)
+        2. Search for each recommended product in database/SerpAPI
+        3. Store detailed product information linked to session
+        4. Return enriched recommendations with full product details
         """
         try:
             form_data = FormData(**data.get("form_data"))
@@ -257,13 +380,13 @@ Format:
                             setattr(self, key, value)
                 skin_analysis = SkinAnalysis(skin_analysis_data)
 
-            # Step 1: Budget allocation
+            # Step 1: Budget allocation (original logic preserved)
             allocation = self.get_budget_allocation(form_data)
 
             # Step 2: Convert total budget
             total_budget = float(form_data.budget.replace("$", "").strip())
 
-            # Step 3: Generate product recommendations
+            # Step 3: Generate AI product recommendations (original logic preserved)
             product_results = {}
             product_categories = list(allocation.keys())
 
@@ -273,20 +396,62 @@ Format:
                 products = self.get_product_recommendations(category, category_budget, form_data, skin_analysis)
                 product_results[category] = products
 
-            # Step 4: Generate future recommendations
+            # Step 4: Generate future recommendations (original logic preserved)
             future = self.get_future_recommendations(
                 form_data,
                 current_categories=product_categories,
                 skin_analysis=skin_analysis
             )
 
+            # Step 5: NEW - Enrich products with detailed information from database/SerpAPI
+            print("🔍 Enriching products with detailed information...")
+            user_context = {
+                "skin_type": form_data.skin_type,
+                "skin_conditions": form_data.skin_conditions,
+                "budget": form_data.budget,
+                "goals": form_data.goals
+            }
+            
+            enriched_products = await self.enrich_products_with_details(
+                products=product_results,
+                session_id=session_id,
+                context=user_context
+            )
+            
+            enriched_future = await self.enrich_future_recommendations(
+                future_recommendations=future,
+                session_id=session_id,
+                context=user_context
+            )
+
             print("categories:", product_categories)
+            print("✅ Product enrichment completed")
+
+            # Step 6: Prepare response in original format for API compatibility
+            # Store enriched data separately for database
+            enriched_response = {
+                "allocation": allocation,
+                "products": enriched_products,  # Enriched version
+                "total_budget": f"${total_budget}",
+                "future_recommendations": enriched_future,
+                "enrichment_summary": {
+                    "total_products_searched": sum(len(products) for products in product_results.values()),
+                    "session_id": session_id,
+                    "search_completed": True
+                }
+            }
+            
+            # Return original format for API response (Pydantic validation)
+            api_response = {
+                "allocation": allocation,
+                "products": product_results,  # Original format
+                "total_budget": f"${total_budget}",
+                "future_recommendations": future  # Original format
+            }
 
             return {
-                "allocation": allocation,
-                "products": product_results,
-                "total_budget": f"${total_budget}",
-                "future_recommendations": future
+                "api_response": api_response,  # For API response
+                "enriched_data": enriched_response  # For database storage
             }
 
         except Exception as e:
