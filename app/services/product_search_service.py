@@ -42,7 +42,6 @@ class ProductSearchService:
                 print(f"✅ Found '{query}' in cache")
                 return product
             
-            print(f"⚠️  '{query}' not found in cache")
             return None
             
         except Exception as e:
@@ -77,11 +76,8 @@ class ProductSearchService:
     async def fetch_product_from_serpapi(self, query: str) -> Optional[Dict[str, Any]]:
         """Fetch product data from SerpAPI using Google Shopping with detailed descriptions"""
         try:
-            print(f"🔍 Fetching '{query}' from SerpAPI...")
-            
             # Clean up query
             cleaned_query = self._clean_product_query(query)
-            print(f"🧹 Cleaned query: '{cleaned_query}'")
             
             # Use Google Shopping engine for consistent results
             search_params = {
@@ -92,29 +88,25 @@ class ProductSearchService:
                 "gl": "us"
             }
             
-            print(f"🌐 Calling SerpAPI with params: {search_params}")
             search_res = requests.get("https://serpapi.com/search.json", params=search_params)
             
             if search_res.status_code != 200:
-                print(f"❌ SerpAPI request failed with status {search_res.status_code}")
+                print(f"❌ SerpAPI request failed for '{query}'")
                 return None
                 
             data = search_res.json()
             
             # Check for errors in response
             if "error" in data:
-                print(f"❌ SerpAPI Error: {data['error']}")
+                print(f"❌ SerpAPI Error for '{query}': {data['error']}")
                 return None
-            
-            print(f"📊 Response keys: {list(data.keys())}")
             
             # Extract from shopping_results
             shopping_results = data.get("shopping_results", [])
             if not shopping_results:
-                print(f"❌ No shopping results found for '{cleaned_query}'")
+                print(f"❌ No shopping results found for '{query}'")
                 return None
                 
-            print(f"🛒 Found {len(shopping_results)} shopping results, using first one...")
             first_result = shopping_results[0]
             
             # Start with basic product data
@@ -141,7 +133,6 @@ class ProductSearchService:
             detailed_description = ""
             
             if product_api_url:
-                print("🔍 Found product API URL, fetching detailed information...")
                 try:
                     # Parse and prepare product API parameters
                     parsed_url = urlparse(product_api_url)
@@ -182,13 +173,10 @@ class ProductSearchService:
                                 "variants": product_results.get("variants", []),
                                 "seller_info": product_results.get("sellers", []),
                             })
-                            
-                        print("✅ Successfully fetched detailed product information")
-                    else:
-                        print(f"⚠️  Product API request failed with status {product_res.status_code}")
                         
                 except Exception as e:
-                    print(f"⚠️  Error fetching detailed product info: {e}")
+                    # Silently continue if detailed fetch fails
+                    pass
             
             # Use the best available description
             final_description = (
@@ -201,12 +189,6 @@ class ProductSearchService:
             
             # Clean up None values and empty strings
             product_data = {k: v for k, v in product_data.items() if v is not None and v != "" and v != []}
-            
-            print(f"📦 Extracted fields: {list(product_data.keys())}")
-            print(f"🏷️  Product: {product_data.get('title', 'N/A')}")
-            print(f"💰 Price: {product_data.get('price', 'N/A')}")
-            print(f"🔗 Link: {product_data.get('product_link', 'N/A')}")
-            print(f"📝 Description: {final_description[:200]}...")
             
             print(f"✅ Successfully fetched '{query}' from SerpAPI")
             return product_data
@@ -236,7 +218,6 @@ class ProductSearchService:
                 upsert=True
             )
             
-            print(f"✅ Saved '{product_data['query']}' to products cache")
             return True
             
         except Exception as e:
@@ -266,7 +247,6 @@ class ProductSearchService:
                 upsert=True
             )
             
-            print(f"✅ Saved recommended product '{product_data['query']}' for session {session_id}")
             return True
             
         except Exception as e:
@@ -324,5 +304,4 @@ class ProductSearchService:
             return []
 
 
-# Global instance
 product_search_service = ProductSearchService()

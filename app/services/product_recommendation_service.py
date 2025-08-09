@@ -264,8 +264,6 @@ Format:
                     if not product_name:
                         continue
                     
-                    print(f"🔍 Searching for product details: {product_name}")
-                    
                     # Create recommendation context for this product
                     recommendation_context = {
                         "category": category,
@@ -290,7 +288,6 @@ Format:
                             "enriched_at": product_details.get("fetched_at"),
                             "search_successful": True
                         }
-                        print(f"✅ Successfully enriched: {product_name}")
                     else:
                         # Keep original recommendation if search fails
                         enriched_product = {
@@ -300,7 +297,6 @@ Format:
                             "search_successful": False,
                             "error": "Product details not found"
                         }
-                        print(f"⚠️  Could not find details for: {product_name}")
                     
                     enriched_category.append(enriched_product)
                 
@@ -404,7 +400,6 @@ Format:
             )
 
             # Step 5: NEW - Enrich products with detailed information from database/SerpAPI
-            print("🔍 Enriching products with detailed information...")
             user_context = {
                 "skin_type": form_data.skin_type,
                 "skin_conditions": form_data.skin_conditions,
@@ -423,9 +418,6 @@ Format:
                 session_id=session_id,
                 context=user_context
             )
-
-            print("categories:", product_categories)
-            print("✅ Product enrichment completed")
 
             # Step 6: Prepare response in original format for API compatibility
             # Store enriched data separately for database
