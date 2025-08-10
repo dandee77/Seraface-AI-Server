@@ -62,7 +62,7 @@ class EnrichedProduct(BaseModel):
         """Convert to simple Product model for API responses"""
         return Product(
             name=self.title or self.query,
-            price=self.price or "$0.00"
+            price=self.price or "₱0.00"
         )
 
 

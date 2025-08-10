@@ -33,13 +33,17 @@ class Phase3Service:
         🟠 Tier 3	Specialized Boosters	        Eye Cream, Essence, Ampoule, Exfoliants
         🔵 Tier 4	Occasional / Luxury	            Masks, Face Mist, Facial Oil, Neck Cream, Lip Care
         """
-        budget_amount = float(form_data.budget.replace("$", "").strip())
+        budget_str = form_data.budget.replace("₱", "").replace("$", "").replace("PHP", "").replace("USD", "").strip()
+        budget_amount = float(budget_str)
         
-        if budget_amount < 15:
+        if "$" in form_data.budget or "USD" in form_data.budget.upper():
+            budget_amount = budget_amount * 56 
+        
+        if budget_amount < 500: 
             allowed_categories = ["facial_wash", "moisturizer", "sunscreen"]
-        elif budget_amount < 30:
+        elif budget_amount < 800: 
             allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment"]
-        elif budget_amount < 60:
+        elif budget_amount < 1500: 
             allowed_categories = ["facial_wash", "moisturizer", "sunscreen", "treatment", "toner", "serum"]
         else:
             allowed_categories = [
@@ -111,23 +115,23 @@ User Profile:
 - Skin Conditions: {', '.join(form_data.skin_conditions)}
 - Allergies: {', '.join(form_data.allergies)}
 - Goals: {', '.join(form_data.goals + ([form_data.custom_goal] if form_data.custom_goal else []))}
-- Budget for {category}: ${budget}
+- Budget for {category}: ₱{budget} PHP (~${budget/56:.0f} USD)
 
 {analysis_context}
 
 Instructions:
-- Recommend 3-5 specific {category} products within the ${budget} budget
-- Include real product names and estimated prices
+- Recommend 3-5 specific {category} products within the ₱{budget} PHP budget
+- Include real product names with prices in Philippine Peso (PHP)
 - Consider the user's skin type, conditions, and goals
 - Avoid ingredients they're allergic to
 - Output as a JSON array with objects containing "name" and "price" fields
-- Prices should be strings like "$25.99"
+- Prices should be strings like "₱1,299.00" (PHP format with peso symbol)
 - No markdown or explanations, just return the JSON array
 
 Example format:
 [
-  {{"name": "Product Name", "price": "$25.99"}},
-  {{"name": "Another Product", "price": "$15.00"}}
+  {{"name": "Product Name", "price": "₱1,299.00"}},
+  {{"name": "Another Product", "price": "₱850.00"}}
 ]
 """
 
@@ -200,7 +204,8 @@ Instructions:
 - Recommend 2-3 future product categories from the available list
 - For each category, suggest 2-3 specific products
 - Output as JSON array with objects containing "category" and "products" fields
-- Products should have "name" and "price" fields
+- Products should have "name" and "price" fields with PHP pricing
+- Prices should be strings like "₱1,500.00" (Philippine Peso format)
 - No markdown or explanations, just return the JSON array
 
 Format:
@@ -208,8 +213,8 @@ Format:
   {{
     "category": "serum",
     "products": [
-      {{"name": "Product Name", "price": "$30.00"}},
-      {{"name": "Another Product", "price": "$25.00"}}
+      {{"name": "Product Name", "price": "₱1,680.00"}},
+      {{"name": "Another Product", "price": "₱1,400.00"}}
     ]
   }}
 ]
@@ -259,7 +264,7 @@ Format:
                 
                 for product in product_list:
                     product_name = product.get("name", "")
-                    recommended_price = product.get("price", "$0.00")
+                    recommended_price = product.get("price", "₱0.00")
                     
                     if not product_name:
                         continue
