@@ -21,7 +21,7 @@ class Phase4Service:
     """Service for Phase 4: Routine Creation (Original logic preserved)"""
     
     def __init__(self):
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.model = genai.GenerativeModel("gemini-2.0-flash")
 
     def get_routine_for_user(self, form_data: FormData, product_recommendations: dict) -> dict:
         """Get routine for user - ORIGINAL LOGIC PRESERVED"""

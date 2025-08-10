@@ -79,13 +79,13 @@ class ProductSearchService:
             # Clean up query
             cleaned_query = self._clean_product_query(query)
             
-            # Use Google Shopping engine for consistent results
+            # Use Google Shopping engine with Philippine locale for PHP prices
             search_params = {
                 "engine": "google_shopping",
                 "q": cleaned_query,
                 "api_key": self.api_key,
-                "hl": "en",
-                "gl": "us"
+                "hl": "en",  # Language: English
+                "gl": "ph"   # Country: Philippines (for PHP prices)
             }
             
             search_res = requests.get("https://serpapi.com/search.json", params=search_params)

@@ -59,14 +59,14 @@ def fetch_product_data(query):
     cleaned_query = clean_product_query(query)
     print(f"🧹 Cleaned query: '{cleaned_query}'")
 
-    # Use Google Shopping engine for consistent results
-    print("🛒 Searching with Google Shopping engine...")
+    # Use Google Shopping engine with Philippine locale for Peso prices
+    print("🛒 Searching with Google Shopping engine (Philippines)...")
     shopping_params = {
         "engine": "google_shopping",
         "q": cleaned_query,
         "api_key": API_KEY,
-        "hl": "en",
-        "gl": "us"
+        "hl": "en",  # Language: English
+        "gl": "ph"   # Country: Philippines (for PHP prices)
     }
 
     print(f"🌐 Calling SerpAPI with params: {shopping_params}")
